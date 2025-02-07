@@ -12,16 +12,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Debug - Show Current Directory
+        run: pwd && ls -R
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
       - name: Install dependencies
-        working-directory: ${{ github.workspace }}
         run: pip install -r requirements.txt
 
+      - name: Debug - Show Current Directory After Install
+        run: pwd && ls -R
+
       - name: Run fetch script
-        working-directory: ${{ github.workspace }}
-        run: python fetch_stock_history.py
+        run: python fetch_stock_history.py  # ✅ Run the script
 
