@@ -1,31 +1,42 @@
-name: Fetch Stock OHLC Data Daily
+import os
+import yfinance as yf
+from supabase import create_client
+from datetime import datetime
 
-on:
-  schedule:
-    - cron: "0 3 * * *"  # Runs daily at 3 AM UTC
-  workflow_dispatch:  # Allows manual runs
+# Supabase credentials (stored in GitHub Secrets or local .env)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-jobs:
-  fetch_stock_data:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Supabase credentials missing")
 
-      - name: Debug - Show Current Directory
-        run: pwd && ls -R
+# Initialize Supabase client
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
+# List of stock symbols to fetch
+STOCKS = ["AAPL", "GOOGL", "AMZN", "TSLA", "MSFT"]
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+def fetch_and_store():
+    for symbol in STOCKS:
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period="1d")  # Fetch latest daily data
 
-      - name: Debug - Show Current Directory After Install
-        run: pwd && ls -R
+        if not hist.empty:
+            latest = hist.iloc[-1]  # Get the latest row
+            data = {
+                "date": latest.name.strftime("%Y-%m-%d"),
+                "open": float(latest["Open"]),
+                "close": float(latest["Close"]),
+                "high": float(latest["High"]),
+                "low": float(latest["Low"]),
+                "volume": int(latest["Volume"]),
+                "created_at": datetime.utcnow().isoformat()
+            }
 
-      - name: Run fetch script
-        run: python fetch_stock_history.py  # ✅ Run the script
+            # Insert into Supabase
+            response = supabase.table("stocks_history").insert(data).execute()
+            print(f"Inserted {symbol} OHLC data:", response.data)
+
+if __name__ == "__main__":
+    fetch_and_store()
 
