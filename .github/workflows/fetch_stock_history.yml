@@ -3,7 +3,7 @@ name: Fetch Stock OHLC Data Daily
 on:
   schedule:
     - cron: "0 3 * * *"  # Runs daily at 3 AM UTC
-  workflow_dispatch:  # 👈 Enables manual trigger
+  workflow_dispatch:  # Allows manual runs
 
 jobs:
   fetch_stock_data:
@@ -18,11 +18,10 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
+        working-directory: ${{ github.workspace }}
         run: pip install -r requirements.txt
 
       - name: Run fetch script
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        working-directory: ${{ github.workspace }}
         run: python fetch_stock_history.py
 
